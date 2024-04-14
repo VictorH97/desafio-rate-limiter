@@ -1,0 +1,71 @@
+package ratelimiter
+
+import (
+	"testing"
+
+	"github.com/VictorH97/devfullcycle/goexpert/desafio-rate-limiter/internal/infra/database/redis"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestRateLimiter(t *testing.T) {
+	repository := redis.NewLimiterInfoRepository("localhost:6379", "", 0)
+
+	//First request
+	limitReached, err := CheckLimitReached("192.168.1.2", 3, 60, repository)
+	assert.Nil(t, err)
+	assert.False(t, limitReached)
+
+	ipData, err := repository.GetByIP("192.168.1.2")
+	assert.Nil(t, err)
+
+	assert.Equal(t, ipData.IP, "192.168.1.2")
+	assert.Equal(t, ipData.Blocked, false)
+
+	//Second request
+	limitReached, err = CheckLimitReached(ipData.IP, 3, 60, repository)
+	assert.Nil(t, err)
+	assert.False(t, limitReached)
+
+	//Third request
+	limitReached, err = CheckLimitReached(ipData.IP, 3, 60, repository)
+	assert.Nil(t, err)
+	assert.False(t, limitReached)
+
+	//Fourth request -> blocked
+	limitReached, err = CheckLimitReached(ipData.IP, 3, 60, repository)
+	assert.Nil(t, err)
+	assert.True(t, limitReached)
+
+	ipData, err = repository.GetByIP("192.168.1.2")
+	assert.Nil(t, err)
+
+	assert.True(t, ipData.Blocked)
+}
+
+func TestIPBlocked(t *testing.T) {
+	repository := redis.NewLimiterInfoRepository("localhost:6379", "", 0)
+
+	//First request
+	limitReached, err := CheckLimitReached("192.168.1.2", 3, 60, repository)
+	assert.Nil(t, err)
+	assert.True(t, limitReached)
+
+	ipData, err := repository.GetByIP("192.168.1.2")
+	assert.Nil(t, err)
+
+	assert.True(t, ipData.Blocked)
+}
+
+func TestIPUnblocked(t *testing.T) {
+	repository := redis.NewLimiterInfoRepository("localhost:6379", "", 0)
+
+	//First request
+	limitReached, err := CheckLimitReached("192.168.1.2", 3, 60, repository)
+	assert.Nil(t, err)
+	assert.False(t, limitReached)
+
+	ipData, err := repository.GetByIP("192.168.1.2")
+	assert.Nil(t, err)
+
+	assert.False(t, ipData.Blocked)
+}
