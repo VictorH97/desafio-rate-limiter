@@ -84,11 +84,3 @@ func (web *Webserver) RateLimiter(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
-// func getClientIp(req *http.Request) string {
-// 	clientIp := req.Header.Get("X-FORWARDED-FOR")
-// 	if clientIp != "" {
-// 		return clientIp
-// 	}
-// 	return req.RemoteAddr
-// }

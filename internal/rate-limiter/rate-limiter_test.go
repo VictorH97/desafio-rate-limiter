@@ -1,7 +1,9 @@
 package ratelimiter
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/VictorH97/devfullcycle/goexpert/desafio-rate-limiter/internal/infra/database/redis"
 	"github.com/stretchr/testify/assert"
@@ -68,4 +70,22 @@ func TestIPUnblocked(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.False(t, ipData.Blocked)
+}
+
+func BenchmarkLimitReached(b *testing.B) {
+	repository := redis.NewLimiterInfoRepository("localhost:6379", "", 0)
+
+	for i := 0; i < b.N; i++ {
+		limitReached, err := CheckLimitReached("192.168.1.2", 3, 60, repository)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+
+		if limitReached {
+			fmt.Println("Limit reached. Waiting for the blocking time.")
+			time.Sleep(time.Second)
+		} else {
+			fmt.Println("You are able to call the API.")
+		}
+	}
 }
